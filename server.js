@@ -1,8 +1,8 @@
-var express = require('express');
-var app = express();
-var server = require('http').Server(app);
-var io = require('socket.io')(server);
-var childProcess = require('child_process');
+const express = require('express');
+const app = express();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+const childProcess = require('child_process');
 
 require('dotenv').config();
 

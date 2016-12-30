@@ -1,8 +1,8 @@
 $(() => {
-    var socket = io();
+    const socket = io();
     
     socket.on('cmdOutput', cmdOutput => {
-        var el =document.createElement('p');
+        const el =document.createElement('p');
         el.innerHTML = cmdOutput.cmd + " : " + cmdOutput.output;
         document.getElementById('output').appendChild(el);
     });

@@ -1,14 +1,8 @@
-$(() => {
-    const socket = io();
-    
-    socket.on('cmdOutput', cmdOutput => {
-        const el =document.createElement('p');
-        el.innerHTML = cmdOutput.cmd + " : " + cmdOutput.output;
-        document.getElementById('output').appendChild(el);
-    });
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
 
-    $('#sendCommand').click(() => {
-        socket.emit('command', $('#command').val());
-    })
-});
+ReactDOM.render(<App />, document.getElementById('root'));
+
+
 

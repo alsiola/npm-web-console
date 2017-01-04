@@ -1,1 +1,1 @@
-setInterval(() => console.log("test 1"), 5000);
+const interval = setInterval(() => console.log("test 1"), 5000);

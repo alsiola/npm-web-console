@@ -1,13 +1,17 @@
 import React from 'react';
 import io from 'socket.io-client';
+import update from 'react-addons-update';
 import CommandBox from './CommandBox';
 import CommandStarter from './CommandStarter';
+import RunningTasks from './RunningTasks';
+import {Grid, Row, Col, PageHeader} from 'react-bootstrap';
+import './App.css';
 
 export default class App extends React.Component {
     constructor() {
         super();
         this.state = {
-            runningCommands: {}
+            tasks: {}
         }
         this.socket = io();
         this.initSockets(this.socket);
@@ -23,11 +27,23 @@ export default class App extends React.Component {
         });
 
         socket.on('cmd_exited', cmd => {
-            this.addOutput(cmd, "Process has exited gracefully.");
+            this.addOutput(cmd, "Process has exited gracefully.");            
+
+            this.setState({
+                tasks: update(this.state.tasks, {                
+                    [cmd]: {                    
+                        isRunning: { $set : false }
+                    }
+                })
+            });
         });
 
-        socket.on('cmd_dead', cmd => {
+        socket.on('server_stopped', cmd => {
             this.addOutput(cmd, "Server has been stopped.");
+        });
+
+        socket.on('kill_fail', cmd => {
+            this.addOutput(cmd, "Process kill failed.");
         });
     }
 
@@ -35,39 +51,82 @@ export default class App extends React.Component {
         this.socket.emit('command', cmd);
     }
 
+    killProcess(cmd) {
+        this.socket.emit('kill', cmd);
+        this.addOutput(cmd, "*** KILL COMMAND SENT ***");
+    }
+
 
     addCommand(cmd) {
         this.setState({
-            runningCommands: Object.assign({}, this.state.runningCommands, {
-                [cmd]: []
+            tasks: update(this.state.tasks, {
+                $merge: {
+                    [cmd]: {
+                        command: cmd,
+                        output: [],
+                        isRunning: true,
+                        visible: true
+                    }
+                }
             })
-        })
+        });
     }
 
     addOutput(cmd, output) {
-        if (typeof this.state.runningCommands[cmd] === 'undefined' || !Array.isArray(this.state.runningCommands[cmd])) {
+        if (typeof this.state.tasks[cmd] === 'undefined') {
             this.addCommand(cmd);
         }
 
-        const runningCommands = Object.assign({}, this.state.runningCommands);
-
-        runningCommands[cmd].push(output);
-
         this.setState({
-            runningCommands: runningCommands
+            tasks : update(this.state.tasks, {
+                [cmd]: {output : {$push : [output]}}
+            })
+        });
+    }
+
+    setVisibility(cmd, visible) {
+        this.setState({
+            tasks: update(this.state.tasks, {
+                [cmd]: {
+                    visible: { $set : visible}
+                }
+            })
         });
     }
 
     render() {
-        const commandBoxes = Object.keys(this.state.runningCommands).map((cmd, i) => (
-            <CommandBox command={cmd} output={this.state.runningCommands[cmd]} key={i} />
+        const commandBoxes = Object.values(this.state.tasks).filter(task => task.visible).map((task, i) => (
+            <Col xs={6} key={i} >
+                <CommandBox 
+                    command={task.command} 
+                    output={task.output} 
+                    killProcess={cmd => this.killProcess(cmd)}
+                    isRunning={task.isRunning}
+                    hideBox={cmd => this.setVisibility(cmd, false)}
+                />
+            </Col>
         ));
 
         return (
-            <div>
-                <CommandStarter sendCommand={cmd => this.sendCommand(cmd)} />
-                {commandBoxes}
-            </div>
+            <Grid>
+                <Row>
+                    <PageHeader>NPM Web Console</PageHeader>
+                </Row>
+                <Row>
+                    <Col xs={12} md={6}>
+                        <CommandStarter sendCommand={cmd => this.sendCommand(cmd)} />
+                    </Col>
+                    <Col xs={12} md={6}>
+                        <RunningTasks 
+                            tasks={Object.values(this.state.tasks).filter(task => task.isRunning)} 
+                            toggleVisible={(cmd, vis) => this.setVisibility(cmd, vis)}
+                        />
+                    </Col>
+                </Row>
+                <Row>
+                    {commandBoxes}
+                </Row>
+            </Grid>
         )
     }
 }

@@ -11,13 +11,6 @@ module.exports = {
         path: './dist'
     },
     module: {
-        preloaders: [
-            {
-                test: /\.(js|jsx)$/,
-                exclude: /(node_modules|bower_components)/,
-                loader: 'eslint'
-            }
-        ],
         loaders: [
             {
                 test: /\.(js|jsx)$/,
@@ -26,6 +19,11 @@ module.exports = {
                 query: {
                     presets: ['es2015', 'react']
                 }
+            },
+            { 
+                test: /\.css$/,
+                exclude: /(node_modules|bower_components)/,
+                loader: "style-loader!css-loader" 
             }
         ]
     },
